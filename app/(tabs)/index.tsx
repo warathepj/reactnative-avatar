@@ -1,74 +1,166 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, View, TextInput, TouchableOpacity, Text, Image, Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+const FamicomStyleApp = () => {
+  const [inputText, setInputText] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('https://api.dicebear.com/9.x/pixel-art/svg?seed=John');
 
-export default function HomeScreen() {
+  const handleSubmit = () => {
+    // Handle submit logic here
+    console.log('Submitted:', inputText);
+    // Update avatar when submitting
+    setAvatarUrl(`https://api.dicebear.com/9.x/pixel-art/svg?seed=${inputText}`);
+  };
+
+  const handleDownload = async () => {
+    try {
+      if (Platform.OS === 'web') {
+        // For web: Create a link element and trigger download
+        const link = document.createElement('a');
+        link.href = avatarUrl;
+        link.download = `avatar-${inputText || 'default'}.svg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        // For mobile: Download and share the file
+        const filename = `${FileSystem.documentDirectory}avatar-${inputText || 'default'}.svg`;
+        
+        const downloadResult = await FileSystem.downloadAsync(
+          avatarUrl,
+          filename
+        );
+
+        if (downloadResult.status === 200) {
+          const isAvailable = await Sharing.isAvailableAsync();
+          if (isAvailable) {
+            await Sharing.shareAsync(downloadResult.uri);
+          } else {
+            alert('Sharing is not available on your platform');
+          }
+        } else {
+          alert('Failed to download the avatar');
+        }
+      }
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Failed to download the avatar');
+    }
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
+    <View style={styles.container}>
+      <View style={styles.avatarContainer}>
         <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+          source={{ uri: avatarUrl }}
+          style={styles.avatar}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      </View>
+      <View style={styles.borderContainer}>
+        <View style={styles.mainContainer}>
+          <Text style={styles.title}>ENTER YOUR NAME</Text>
+          
+          <TextInput
+            style={styles.input}
+            onChangeText={setInputText}
+            value={inputText}
+            placeholder="TYPE HERE"
+            placeholderTextColor="#8B8B8B"
+          />
+          
+          <TouchableOpacity 
+            style={styles.button}
+            onPress={handleSubmit}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.buttonText}>SUBMIT</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      
+      <TouchableOpacity 
+        style={[styles.button, styles.downloadButton]}
+        onPress={handleDownload}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.buttonText}>DOWNLOAD AVATAR</Text>
+      </TouchableOpacity>
+    </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: {
+    flex: 1,
+    backgroundColor: '#ffe6e6',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  avatarContainer: {
     alignItems: 'center',
-    gap: 8,
+    marginBottom: 20,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  avatar: {
+    width: 120,
+    height: 120,
+    marginBottom: 20,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  borderContainer: {
+    borderWidth: 4,
+    borderColor: '#E83A30',
+    padding: 4,
+    backgroundColor: '#2A2A2A',
+    marginBottom: 20,
+  },
+  mainContainer: {
+    borderWidth: 4,
+    borderColor: '#FFF',
+    padding: 20,
+    backgroundColor: '#4A4A4A',
+  },
+  title: {
+    fontFamily: 'PressStart2P',
+    color: '#FFF',
+    fontSize: 20,
+    marginBottom: 30,
+    textAlign: 'center',
+    textShadowColor: '#E83A30',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 0,
+  },
+  input: {
+    fontFamily: 'PressStart2P',
+    fontSize: 16,
+    color: '#FFF',
+    borderWidth: 4,
+    borderColor: '#FFF',
+    padding: 10,
+    marginBottom: 20,
+    backgroundColor: '#2A2A2A',
+    height: 60,
+  },
+  button: {
+    backgroundColor: '#E83A30',
+    borderWidth: 4,
+    borderColor: '#FFF',
+    padding: 15,
+    alignItems: 'center',
+  },
+  buttonText: {
+    fontFamily: 'PressStart2P',
+    color: '#FFF',
+    fontSize: 16,
+    textShadowColor: '#000',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 0,
+  },
+  downloadButton: {
+    marginTop: 10,
   },
 });
+
+export default FamicomStyleApp;
+
+
